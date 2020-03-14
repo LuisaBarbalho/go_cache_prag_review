@@ -2,21 +2,30 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 
-	"github.com/gorilla/mux"
+	"github.com/luisabarbalho/go_cache_pragmatic_review/controller"
+	router "github.com/luisabarbalho/go_cache_pragmatic_review/http"
+	"github.com/luisabarbalho/go_cache_pragmatic_review/repository"
+	"github.com/luisabarbalho/go_cache_pragmatic_review/service"
+)
+
+var (
+	postRepository repository.PostRepository = repository.NewFirestoreRepository()
+	postService    service.PostService       = service.NewPostService(postRepository)
+	postController controller.PostController = controller.NewPostController(postService)
+	httpRouter     router.Router             = router.NewChiRouter()
 )
 
 func main() {
-	router := mux.NewRouter()
 	const port string = ":8080"
-	router.HandleFunc("/", func(response http.ResponseWriter, request *http.Request) {
-		fmt.Fprintln(response, "Running YaY")
-	})
-	router.HandleFunc("/posts", getPosts).Methods("GET")
-	router.HandleFunc("/posts", addPost).Methods("POST")
-	log.Println("Server listening on port", port)
-	log.Fatalln(http.ListenAndServe(port, router))
 
+	httpRouter.GET("/", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintln(w, "Up and running...")
+	})
+
+	httpRouter.GET("/posts", postController.GetPosts)
+	httpRouter.POST("/posts", postController.AddPost)
+
+	httpRouter.SERVE(port)
 }
